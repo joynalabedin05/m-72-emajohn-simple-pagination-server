@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port  = process.env.PORT || 5000;
 // middleware
@@ -28,7 +28,11 @@ async function run() {
     const productCollection = client.db('emajohnDb').collection('products');
     
     app.get('/products',async(req,res)=>{
-        const result = await productCollection.find().toArray();
+      console.log(req.query);
+      const page = parseInt(req.query.page)|| 0;
+      const limit = parseInt(req.query.limit)||10;
+      const skip = page * limit;
+        const result = await productCollection.find().skip(skip).limit(limit).toArray();
         res.send(result);
 
     });
@@ -36,6 +40,15 @@ async function run() {
     app.get('/totalProducts', async(req,res)=>{
       const result = await productCollection.estimatedDocumentCount();
       res.send({totalProducts: result})
+    });
+
+    app.post('/productsById', async(req,res)=>{
+      const ids = req.body;
+      console.log(ids);
+      const objectIds = ids.map(id=>new ObjectId(id));
+      const query = {_id:{$in : objectIds}};
+      const result = await productCollection.find(query).toArray();
+      res.send(result);
     })
 
 
